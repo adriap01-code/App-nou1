@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoPro v4 — Instructor Auto</title>
+<link rel="manifest" href="manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0d0f14; --surface:#13161e; --surface2:#1a1e28; --border:#252a38;
+    --accent:#f4a227; --accent2:#e05c2a; --green:#2ecb71; --red:#e84040;
+    --blue:#4a9eff; --text:#e8ecf4; --muted:#6b7490;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(244,162,39,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(244,162,39,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+  .app{position:relative;z-index:1;display:flex;flex-direction:column;min-height:100vh;}
+
+  header{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;border-bottom:1px solid var(--border);background:rgba(13,15,20,0.95);backdrop-filter:blur(12px);position:sticky;top:0;z-index:100;gap:12px;flex-wrap:wrap;}
+  .logo{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:3px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+  .logo span{-webkit-text-fill-color:var(--text);}
+  .nav-tabs{display:flex;gap:3px;flex-wrap:wrap;}
+  .tab{padding:6px 15px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);transition:all 0.2s;border:1px solid transparent;white-space:nowrap;}
+  .tab:hover{color:var(--text);background:var(--surface2);}
+  .tab.active{color:var(--accent);background:rgba(244,162,39,0.1);border-color:rgba(244,162,39,0.3);}
+  .header-date{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);background:var(--surface);padding:5px 12px;border-radius:20px;border:1px solid var(--border);}
+
+  .reminder-banner{display:none;background:rgba(74,158,255,0.1);border-bottom:1px solid rgba(74,158,255,0.3);padding:9px 28px;align-items:center;gap:10px;font-size:13px;color:var(--blue);}
+  .reminder-banner.show{display:flex;}
+
+  main{flex:1;padding:22px 28px;}
+  .panel{display:none;} .panel.active{display:block;}
+
+  .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px;}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;position:relative;overflow:hidden;}
+  .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));}
+  .stat-label{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}
+  .stat-value{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:2px;line-height:1;color:var(--accent);}
+  .stat-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+
+  .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;}
+  .section-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;}
+
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all 0.2s;font-family:'DM Sans',sans-serif;}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000;}
+  .btn-primary:hover{opacity:0.9;transform:translateY(-1px);}
+  .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
+  .btn-ghost:hover{color:var(--text);border-color:var(--muted);}
+  .btn-green{background:rgba(46,203,113,0.15);color:var(--green);border:1px solid rgba(46,203,113,0.3);}
+  .btn-blue{background:rgba(74,158,255,0.15);color:var(--blue);border:1px solid rgba(74,158,255,0.3);}
+  .btn-sm{padding:4px 10px;font-size:12px;}
+
+  .table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;min-width:700px;}
+  thead tr{background:var(--surface2);border-bottom:1px solid var(--border);}
+  th{padding:10px 13px;text-align:left;font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);}
+  td{padding:11px 13px;font-size:13px;border-bottom:1px solid rgba(37,42,56,0.5);vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:rgba(244,162,39,0.02);}
+
+  .progress-wrap{width:100%;background:var(--surface2);border-radius:99px;height:6px;min-width:100px;}
+  .progress-fill{height:6px;border-radius:99px;transition:width 0.4s;}
+  .progress-label{font-size:11px;color:var(--muted);margin-top:3px;font-family:'DM Mono',monospace;}
+
+  .badge{display:inline-block;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600;}
+  .badge-green{background:rgba(46,203,113,0.15);color:var(--green);}
+  .badge-orange{background:rgba(244,162,39,0.15);color:var(--accent);}
+  .badge-red{background:rgba(232,64,64,0.15);color:var(--red);}
+  .badge-blue{background:rgba(74,158,255,0.15);color:var(--blue);}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;}
+  .grid-3{display:grid;grid-template-columns:2fr 1fr;gap:18px;}
+
+  .form-group{margin-bottom:13px;}
+  .form-label{font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:5px;display:block;}
+  .form-input,.form-select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;transition:border-color 0.2s;outline:none;}
+  .form-input:focus,.form-select:focus{border-color:var(--accent);}
+  .form-select option{background:var(--surface2);}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);z-index:999;align-items:center;justify-content:center;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:26px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.5);animation:slideUp 0.2s ease;}
+  @keyframes slideUp{from{transform:translateY(20px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+  .modal-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;margin-bottom:18px;color:var(--accent);}
+  .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;}
+
+  /* EXERCITII CHECKBOXES */
+  .exercitii-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;}
+  .ex-checkbox{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;transition:all 0.15s;user-select:none;}
+  .ex-checkbox:hover{border-color:var(--accent);background:rgba(244,162,39,0.05);}
+  .ex-checkbox.checked{border-color:var(--green);background:rgba(46,203,113,0.08);}
+  .ex-checkbox input[type=checkbox]{accent-color:var(--green);width:16px;height:16px;cursor:pointer;}
+  .ex-label{font-size:13px;font-weight:500;}
+
+  /* EXERCITII PILLS in tabel */
+  .ex-pills{display:flex;flex-wrap:wrap;gap:4px;}
+  .ex-pill{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:600;background:rgba(46,203,113,0.12);color:var(--green);border:1px solid rgba(46,203,113,0.2);}
+
+  /* ELEV CARD in dashboard */
+  .elev-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#000;flex-shrink:0;}
+
+  /* ORE CIRCLE */
+  .ore-circle{position:relative;width:80px;height:80px;flex-shrink:0;}
+  .ore-circle svg{transform:rotate(-90deg);}
+  .ore-circle-text{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;line-height:1;}
+  .ore-circle-val{font-size:18px;color:var(--accent);}
+  .ore-circle-sub{font-size:9px;color:var(--muted);letter-spacing:0.5px;}
+
+  .upcoming-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);}
+  .upcoming-item:last-child{border-bottom:none;}
+  .upcoming-time{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--accent);min-width:46px;}
+
+  .notif-container{position:fixed;top:80px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
+  .notif{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 16px;min-width:270px;box-shadow:0 8px 30px rgba(0,0,0,0.4);animation:slideIn 0.3s ease;font-size:13px;}
+  .notif.notif-warning{border-left:3px solid var(--accent);}
+  .notif.notif-success{border-left:3px solid var(--green);}
+  .notif.notif-info{border-left:3px solid var(--blue);}
+  @keyframes slideIn{from{transform:translateX(100%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+  .notif-title{font-weight:600;margin-bottom:2px;}
+  .notif-body{color:var(--muted);}
+
+  .export-bar{display:flex;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 16px;margin-bottom:16px;}
+
+  /* CONFIRM MODAL */
+  .confirm-modal{width:360px;text-align:center;}
+  .confirm-icon{font-size:40px;margin-bottom:12px;}
+  .confirm-msg{font-size:15px;font-weight:600;margin-bottom:6px;}
+  .confirm-sub{font-size:13px;color:var(--muted);margin-bottom:20px;}
+  .confirm-btns{display:flex;gap:10px;justify-content:center;}
+  .btn-danger{background:rgba(232,64,64,0.15);color:var(--red);border:1px solid rgba(232,64,64,0.3);}
+  .btn-danger:hover{background:rgba(232,64,64,0.25);}
+
+  .examen-section{background:var(--surface2);border-radius:12px;padding:14px;margin-bottom:16px;}
+  .examen-title{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;}
+  .examen-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .examen-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;}
+  .examen-card-title{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+  .examen-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+  .examen-label{font-size:11px;color:var(--muted);min-width:80px;}
+  .examen-val{font-size:13px;font-weight:600;}
+  .rezultat-badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;transition:all 0.15s;}
+  .rezultat-promovat{background:rgba(46,203,113,0.15);color:var(--green);border:1px solid rgba(46,203,113,0.3);}
+  .rezultat-picat{background:rgba(232,64,64,0.15);color:var(--red);border:1px solid rgba(232,64,64,0.3);}
+  .rezultat-asteptare{background:var(--surface2);color:var(--muted);border:1px solid var(--border);}
+  .incercare-btns{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;}
+  .inc-btn{padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);transition:all 0.15s;font-family:'DM Sans',sans-serif;}
+  .inc-btn.active{background:rgba(244,162,39,0.15);color:var(--accent);border-color:rgba(244,162,39,0.4);}
+  .inc-btn:hover{border-color:var(--muted);}
+
+  .fisa-modal{width:600px;}
+  .fisa-header{display:flex;align-items:center;gap:16px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);}
+  .fisa-avatar{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;color:#000;flex-shrink:0;}
+  .fisa-name{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;line-height:1.1;}
+  .fisa-meta{font-size:12px;color:var(--muted);margin-top:2px;}
+
+  /* ORE PROGRESS BIG */
+  .ore-progress-big{background:var(--surface2);border-radius:14px;padding:16px;margin-bottom:16px;}
+  .ore-numbers{display:flex;align-items:baseline;gap:6px;margin-bottom:8px;}
+  .ore-big{font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:2px;line-height:1;color:var(--accent);}
+  .ore-sep{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--muted);}
+  .ore-total{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--muted);}
+  .ore-unit{font-size:13px;color:var(--muted);margin-left:4px;}
+  .ore-bar{width:100%;background:var(--border);border-radius:99px;height:10px;margin:6px 0;}
+  .ore-bar-fill{height:10px;border-radius:99px;transition:width 0.5s ease;}
+  .ore-stats-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px;}
+  .ore-stat{background:var(--surface);border-radius:10px;padding:10px 12px;text-align:center;}
+  .ore-stat-val{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;line-height:1;}
+  .ore-stat-lbl{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:2px;}
+
+  /* CALENDAR SEDINTE */
+  .calendar-wrap{margin-bottom:16px;}
+  .calendar-title{font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+  .calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+  .cal-day-header{font-size:10px;color:var(--muted);text-align:center;padding:3px;font-weight:600;}
+  .cal-day{aspect-ratio:1;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;background:var(--surface2);position:relative;cursor:default;}
+  .cal-day.empty{background:transparent;}
+  .cal-day.has-sedinta{background:rgba(244,162,39,0.15);border:1px solid rgba(244,162,39,0.35);color:var(--accent);font-weight:700;cursor:pointer;}
+  .cal-day.has-sedinta:hover{background:rgba(244,162,39,0.25);}
+  .cal-day.today{border:1px solid var(--blue);color:var(--blue);}
+
+  /* ISTORIC FISA */
+  .fisa-istoric{max-height:220px;overflow-y:auto;}
+  .fisa-sedinta-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);align-items:flex-start;}
+  .fisa-sedinta-item:last-child{border-bottom:none;}
+  .fisa-sed-nr{width:28px;height:28px;border-radius:50%;background:rgba(244,162,39,0.15);border:1px solid rgba(244,162,39,0.3);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:13px;color:var(--accent);flex-shrink:0;}
+  .fisa-sed-data{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);}
+  .fisa-sed-ex{display:flex;flex-wrap:wrap;gap:3px;margin-top:3px;}
+
+  .sedinta-summary{background:var(--surface2);border-radius:10px;padding:12px 14px;margin-bottom:14px;}
+  .sedinta-summary-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;}
+  .sedinta-summary-row span:first-child{color:var(--muted);}
+  .sedinta-summary-row strong{color:var(--accent);font-family:'DM Mono',monospace;}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="notif-container" id="notif-container"></div>
+
+<header>
+  <div class="logo">Auto<span>Pro</span></div>
+  <div class="nav-tabs">
+    <div class="tab active" onclick="switchTab('dashboard',this)">Dashboard</div>
+    <div class="tab" onclick="switchTab('elevi',this)">Elevi</div>
+    <div class="tab" onclick="switchTab('programare',this)">Programare</div>
+    <div class="tab" onclick="switchTab('istoric',this)">Istoric</div>
+    <div class="tab" onclick="switchTab('rapoarte',this)">Rapoarte</div>
+  </div>
+  <div class="header-date" id="currentDate"></div>
+</header>
+
+<div class="reminder-banner" id="reminder-banner">
+  🔔 &nbsp;<span id="reminder-text"></span>
+</div>
+
+<main>
+
+  <!-- DASHBOARD -->
+  <div class="panel active" id="panel-dashboard">
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-label">Total Elevi</div><div class="stat-value" id="st-elevi">0</div><div class="stat-sub">înregistrați</div></div>
+      <div class="stat-card"><div class="stat-label">Ședințe Azi</div><div class="stat-value" id="st-azi">0</div><div class="stat-sub">× 2 ore</div></div>
+      <div class="stat-card"><div class="stat-label">Ore Azi</div><div class="stat-value" id="st-ore-azi">0h</div><div class="stat-sub">din 30h total/elev</div></div>
+      <div class="stat-card"><div class="stat-label">Gata Examen</div><div class="stat-value" id="st-fin">0</div><div class="stat-sub">au completat 30h</div></div>
+    </div>
+    <div class="grid-3">
+      <div>
+        <div class="section-header"><div class="section-title">Programare Azi</div></div>
+        <div class="card" id="upcoming-list"><p style="color:var(--muted);font-size:13px;text-align:center;padding:16px">Nicio programare azi</p></div>
+      </div>
+      <div>
+        <div class="section-header"><div class="section-title">Elevi Activi</div></div>
+        <div class="card" id="active-elevi-list"><p style="color:var(--muted);font-size:13px;text-align:center;padding:16px">Niciun elev</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ELEVI -->
+  <div class="panel" id="panel-elevi">
+    <div class="section-header">
+      <div class="section-title">Evidență Elevi</div>
+      <button class="btn btn-primary" onclick="deschideAdaugaElev()">+ Adaugă Elev</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Elev</th><th>Telefon</th><th>Ședințe</th><th>Ore Condus</th><th>Ore Rămase</th><th>Progres</th><th>Status</th><th>Acțiuni</th>
+        </tr></thead>
+        <tbody id="elevi-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PROGRAMARE -->
+  <div class="panel" id="panel-programare">
+    <div class="section-header">
+      <div class="section-title">Programări</div>
+      <button class="btn btn-primary" onclick="openModal('modal-programare')">+ Ședință Nouă</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Elev</th><th>Data</th><th>Ora</th><th>Loc Întâlnire</th><th>Durată</th><th>Exerciții Planificate</th><th>Status</th><th>Acțiuni</th></tr></thead>
+        <tbody id="prog-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ISTORIC -->
+  <div class="panel" id="panel-istoric">
+    <div class="section-header">
+      <div class="section-title">Istoric Ședințe</div>
+      <select class="form-select" id="filtru-elev" style="width:auto;font-size:13px;" onchange="renderIstoric()">
+        <option value="">Toți elevii</option>
+      </select>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Elev</th><th>Data</th><th>Ora</th><th>Ore</th><th>Exerciții Efectuate</th><th>Observații</th></tr></thead>
+        <tbody id="istoric-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- RAPOARTE -->
+  <div class="panel" id="panel-rapoarte">
+    <div class="section-header"><div class="section-title">Rapoarte & Export</div></div>
+    <div class="export-bar">
+      <span style="font-size:12px;color:var(--muted);">Export:</span>
+      <button class="btn btn-blue btn-sm" onclick="exportCSV()">📊 Excel / CSV</button>
+      <button class="btn btn-ghost btn-sm" onclick="exportPDF()">📄 PDF</button>
+      <div style="width:1px;height:20px;background:var(--border);margin:0 4px;"></div>
+      <span style="font-size:12px;color:var(--muted);">Backup:</span>
+      <button class="btn btn-green btn-sm" onclick="backupDate()">💾 Salvează Backup</button>
+      <label class="btn btn-ghost btn-sm" style="cursor:pointer;">
+        📂 Restaurează <input type="file" accept=".json" onchange="restaureazaBackup(event)" style="display:none;">
+      </label>
+    </div>
+    <div class="stats-row" style="grid-template-columns:repeat(3,1fr)">
+      <div class="stat-card"><div class="stat-label">Total Ședințe</div><div class="stat-value" id="rap-sed">0</div><div class="stat-sub">finalizate</div></div>
+      <div class="stat-card"><div class="stat-label">Total Ore</div><div class="stat-value" id="rap-ore">0h</div><div class="stat-sub">condus (din 30h/elev)</div></div>
+      <div class="stat-card"><div class="stat-label">Medie</div><div class="stat-value" id="rap-med">0</div><div class="stat-sub">ședințe per elev</div></div>
+    </div>
+    <div class="section-header"><div class="section-title">Situație Detaliată</div></div>
+    <div class="table-wrap">
+      <table id="raport-table">
+        <thead><tr><th>Elev</th><th>Cat.</th><th>Ședințe</th><th>Ore Condus</th><th>Ore Rămase</th><th>%</th><th>Parcare Lat.</th><th>Parcare Sp.</th><th>Traseu Oraș</th><th>Pornire Pantă</th><th>Examen</th></tr></thead>
+        <tbody id="rap-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<!-- MODAL: Elev (Adaugă / Editează) -->
+<div class="modal-overlay" id="modal-elev">
+  <div class="modal">
+    <div class="modal-title" id="modal-elev-title">Adaugă Elev Nou</div>
+    <input type="hidden" id="el-edit-idx" value="-1">
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Prenume</label><input type="text" class="form-input" id="el-prenume" placeholder="Ion"></div>
+      <div class="form-group"><label class="form-label">Nume</label><input type="text" class="form-input" id="el-nume" placeholder="Popescu"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Telefon</label><input type="text" class="form-input" id="el-tel" placeholder="07xx xxx xxx"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Categorie</label>
+        <select class="form-select" id="el-cat"><option>B - Autoturism</option><option>A - Motocicletă</option><option>C - Camion</option></select>
+      </div>
+      <div class="form-group"><label class="form-label">Data Înregistrare</label><input type="date" class="form-input" id="el-data"></div>
+    </div>
+    <div class="sedinta-summary" style="margin-top:4px;">
+      <div class="sedinta-summary-row"><span>Total ore obligatorii</span><strong>30h</strong></div>
+      <div class="sedinta-summary-row"><span>Durată ședință</span><strong>2h</strong></div>
+      <div class="sedinta-summary-row"><span>Nr. ședințe necesare</span><strong>15 ședințe</strong></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-elev')">Anulează</button>
+      <button class="btn btn-primary" onclick="salveazaElev()">Salvează</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Programare -->
+<div class="modal-overlay" id="modal-programare">
+  <div class="modal">
+    <div class="modal-title">Ședință Nouă</div>
+    <div class="form-group"><label class="form-label">Elev</label>
+      <select class="form-select" id="prog-elev" onchange="updateElevInfo()"><option value="">— Selectează —</option></select>
+    </div>
+    <div id="elev-info-box" style="display:none;" class="sedinta-summary">
+      <div class="sedinta-summary-row"><span>Ședințe efectuate</span><strong id="ei-sed">—</strong></div>
+      <div class="sedinta-summary-row"><span>Ore condus</span><strong id="ei-ore">—</strong></div>
+      <div class="sedinta-summary-row"><span>Ore rămase</span><strong id="ei-rama">—</strong></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Data</label><input type="date" class="form-input" id="prog-data"></div>
+      <div class="form-group"><label class="form-label">Ora</label><input type="time" class="form-input" id="prog-ora" value="09:00"></div>
+    </div>
+    <div class="form-group"><label class="form-label">📍 Loc de Întâlnire</label><input type="text" class="form-input" id="prog-loc" placeholder="ex: Parcul Tineretului, Strada Unirii nr.5..."></div>
+    <div class="form-group">
+      <label class="form-label">Exerciții planificate pentru această ședință</label>
+      <div class="exercitii-grid" id="ex-checkboxes-prog">
+        <label class="ex-checkbox" id="ex-prog-0"><input type="checkbox" onchange="toggleExStyle(this)"> <span class="ex-label">🅿️ Parcare laterală</span></label>
+        <label class="ex-checkbox" id="ex-prog-1"><input type="checkbox" onchange="toggleExStyle(this)"> <span class="ex-label">⬛ Parcare cu spatele</span></label>
+        <label class="ex-checkbox" id="ex-prog-2"><input type="checkbox" onchange="toggleExStyle(this)"> <span class="ex-label">🏙️ Traseu oraș</span></label>
+        <label class="ex-checkbox" id="ex-prog-3"><input type="checkbox" onchange="toggleExStyle(this)"> <span class="ex-label">⛰️ Pornire pe pantă</span></label>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Observații</label><input type="text" class="form-input" id="prog-obs" placeholder="ex: zona Gării, parcare Kaufland..."></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+      <input type="checkbox" id="prog-reminder" checked style="accent-color:var(--accent);">
+      <label for="prog-reminder" style="font-size:13px;color:var(--muted);">Reminder 30 min înainte</label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-programare')">Anulează</button>
+      <button class="btn btn-primary" onclick="adaugaProgramare()">Confirmă</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Finalizare ședință -->
+<div class="modal-overlay" id="modal-finaliz">
+  <div class="modal">
+    <div class="modal-title">Finalizează Ședința</div>
+    <div id="fin-info" class="sedinta-summary" style="margin-bottom:14px;"></div>
+    <div class="form-group">
+      <label class="form-label">Exerciții efectuate în această ședință</label>
+      <div class="exercitii-grid">
+        <label class="ex-checkbox" id="ex-fin-0"><input type="checkbox" onchange="toggleExStyle(this)"> <span class="ex-label">🅿️ Parcare laterală</span></label>
+        <label class="ex-checkbox" id="ex-fin-1"><input type="checkbox" onchange="toggleExStyle(this)"> <span class="ex-label">⬛ Parcare cu spatele</span></label>
+        <label class="ex-checkbox" id="ex-fin-2"><input type="checkbox" onchange="toggleExStyle(this)"> <span class="ex-label">🏙️ Traseu oraș</span></label>
+        <label class="ex-checkbox" id="ex-fin-3"><input type="checkbox" onchange="toggleExStyle(this)"> <span class="ex-label">⛰️ Pornire pe pantă</span></label>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Observații instructor</label><input type="text" class="form-input" id="fin-obs" placeholder="ex: progres bun la parcare..."></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-finaliz')">Anulează</button>
+      <button class="btn btn-green" onclick="confirmFinalizare()">✓ Salvează Ședința</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Fișa Elev -->
+<div class="modal-overlay" id="modal-fisa">
+  <div class="modal fisa-modal">
+    <div class="fisa-header">
+      <div class="fisa-avatar" id="fisa-avatar"></div>
+      <div style="flex:1">
+        <div class="fisa-name" id="fisa-name"></div>
+        <div class="fisa-meta" id="fisa-meta"></div>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-ghost btn-sm" id="fisa-edit-btn">✏️ Editează</button>
+        <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-fisa')">✕</button>
+      </div>
+    </div>
+
+    <!-- ORE PROGRESS -->
+    <div class="ore-progress-big">
+      <div style="font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;font-weight:600;margin-bottom:6px;">Progres Conducere</div>
+      <div class="ore-numbers">
+        <div class="ore-big" id="fisa-ore-ef"></div>
+        <div class="ore-sep">/</div>
+        <div class="ore-total">30</div>
+        <div class="ore-unit">ore conduse</div>
+      </div>
+      <div class="ore-bar"><div class="ore-bar-fill" id="fisa-bar"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:2px;">
+        <span id="fisa-pct-text"></span>
+        <span id="fisa-rama-text"></span>
+      </div>
+      <div class="ore-stats-row">
+        <div class="ore-stat">
+          <div class="ore-stat-val" id="fisa-sed-ef" style="color:var(--accent);"></div>
+          <div class="ore-stat-lbl">Ședințe făcute</div>
+        </div>
+        <div class="ore-stat">
+          <div class="ore-stat-val" id="fisa-sed-ram" style="color:var(--accent2);"></div>
+          <div class="ore-stat-lbl">Ședințe rămase</div>
+        </div>
+        <div class="ore-stat">
+          <div class="ore-stat-val" id="fisa-status-val"></div>
+          <div class="ore-stat-lbl">Status</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CALENDAR -->
+    <div class="calendar-wrap">
+      <div class="calendar-title">📅 Calendar Ședințe — <span id="fisa-cal-luna"></span></div>
+      <div style="display:flex;gap:6px;margin-bottom:8px;" id="fisa-cal-nav">
+        <button class="btn btn-ghost btn-sm" onclick="calNav(-1)">‹</button>
+        <button class="btn btn-ghost btn-sm" onclick="calNav(1)">›</button>
+      </div>
+      <div class="calendar-grid" id="fisa-calendar"></div>
+    </div>
+
+    <!-- ISTORIC -->
+    <div>
+      <div class="calendar-title" style="margin-bottom:8px;">📋 Istoric Ședințe</div>
+      <div class="fisa-istoric" id="fisa-istoric-list"></div>
+    </div>
+
+    <!-- EXAMEN -->
+    <div class="examen-section">
+      <div class="examen-title">🎓 Date Examen</div>
+      <div class="examen-grid">
+        <!-- TEORIE -->
+        <div class="examen-card">
+          <div class="examen-card-title">📚 Teorie (Sală Poliție)</div>
+          <div class="examen-row">
+            <span class="examen-label">Data:</span>
+            <input type="date" class="form-input" id="ex-teorie-data" style="padding:4px 8px;font-size:12px;height:auto;" onchange="salveazaExamen()">
+          </div>
+          <div class="examen-row">
+            <span class="examen-label">Rezultat:</span>
+            <div style="display:flex;gap:4px;">
+              <span class="rezultat-badge" id="ex-teorie-promovat" onclick="setRezultat('teorie','promovat')">✓ Promovat</span>
+              <span class="rezultat-badge" id="ex-teorie-picat" onclick="setRezultat('teorie','picat')">✗ Picat</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Încercare nr.:</div>
+            <div class="incercare-btns" id="ex-teorie-inc">
+              <button class="inc-btn" onclick="setIncercare('teorie',1)">1</button>
+              <button class="inc-btn" onclick="setIncercare('teorie',2)">2</button>
+              <button class="inc-btn" onclick="setIncercare('teorie',3)">3</button>
+              <button class="inc-btn" onclick="setIncercare('teorie',4)">4+</button>
+            </div>
+          </div>
+        </div>
+        <!-- PRACTIC -->
+        <div class="examen-card">
+          <div class="examen-card-title">🚗 Practic (Traseu)</div>
+          <div class="examen-row">
+            <span class="examen-label">Data:</span>
+            <input type="date" class="form-input" id="ex-practic-data" style="padding:4px 8px;font-size:12px;height:auto;" onchange="salveazaExamen()">
+          </div>
+          <div class="examen-row">
+            <span class="examen-label">Rezultat:</span>
+            <div style="display:flex;gap:4px;">
+              <span class="rezultat-badge" id="ex-practic-promovat" onclick="setRezultat('practic','promovat')">✓ Promovat</span>
+              <span class="rezultat-badge" id="ex-practic-picat" onclick="setRezultat('practic','picat')">✗ Picat</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Încercare nr.:</div>
+            <div class="incercare-btns" id="ex-practic-inc">
+              <button class="inc-btn" onclick="setIncercare('practic',1)">1</button>
+              <button class="inc-btn" onclick="setIncercare('practic',2)">2</button>
+              <button class="inc-btn" onclick="setIncercare('practic',3)">3</button>
+              <button class="inc-btn" onclick="setIncercare('practic',4)">4+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-actions" style="margin-top:14px;">
+      <button class="btn btn-ghost" onclick="closeModal('modal-fisa')">Închide</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Confirmare Ștergere -->
+<div class="modal-overlay" id="modal-confirm">
+  <div class="modal confirm-modal">
+    <div class="confirm-icon">🗑️</div>
+    <div class="confirm-msg" id="confirm-msg">Ștergeți?</div>
+    <div class="confirm-sub" id="confirm-sub">Această acțiune nu poate fi anulată.</div>
+    <div class="confirm-btns">
+      <button class="btn btn-ghost" onclick="closeModal('modal-confirm')">Anulează</button>
+      <button class="btn btn-danger" id="confirm-ok-btn">Da, șterge</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---- CONSTANTE ----
+const SEDINTA_MIN = 120;      // 2h
+const TOTAL_ORE = 30;         // ore obligatorii
+const TOTAL_MIN = TOTAL_ORE * 60;  // 1800 min
+const TOTAL_SEDINTE = TOTAL_MIN / SEDINTA_MIN; // 15 sedinte
+
+const EXERCITII = ['Parcare laterală','Parcare cu spatele','Traseu oraș','Pornire pe pantă'];
+const EX_ICON = ['🅿️','⬛','🏙️','⛰️'];
+
+// ---- STATE ----
+let elevi = JSON.parse(localStorage.getItem('ap3_elevi') || '[]');
+let programari = JSON.parse(localStorage.getItem('ap3_programari') || '[]');
+let istoric = JSON.parse(localStorage.getItem('ap3_istoric') || '[]');
+let finalizIdx = null; // index programare in curs de finalizare
+
+function save() {
+  localStorage.setItem('ap3_elevi', JSON.stringify(elevi));
+  localStorage.setItem('ap3_programari', JSON.stringify(programari));
+  localStorage.setItem('ap3_istoric', JSON.stringify(istoric));
+}
+
+// ---- UTILS ----
+function initials(n) { return n.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2); }
+function minToH(min) { const h=Math.floor(min/60),m=min%60; return m>0?`${h}h ${m}min`:`${h}h`; }
+function sedToOre(s) { return minToH(s*SEDINTA_MIN); }
+function pct(el) { return Math.min(100,Math.round((el.sedinteEfectuate/TOTAL_SEDINTE)*100)); }
+function pctColor(p) { return p>=100?'var(--green)':p>=60?'var(--accent)':'var(--accent2)'; }
+function getTodayStr() { return new Date().toISOString().slice(0,10); }
+function timeToMin(t) { const [h,m]=t.split(':').map(Number); return h*60+m; }
+
+function oreCon(el) { return minToH(el.sedinteEfectuate * SEDINTA_MIN); }
+function oreRam(el) { return minToH(Math.max(0,(TOTAL_SEDINTE-el.sedinteEfectuate)*SEDINTA_MIN)); }
+
+// ---- HEADER ----
+function updateHeader() {
+  const now = new Date();
+  const zi = now.toLocaleDateString('ro-RO',{weekday:'short',day:'numeric',month:'short'});
+  const ora = now.toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('currentDate').textContent = zi+' · '+ora;
+}
+updateHeader(); setInterval(updateHeader,30000);
+
+// ---- TABS ----
+function switchTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('panel-'+name).classList.add('active');
+  ({dashboard:renderDashboard,elevi:renderElevi,programare:renderProgramare,istoric:renderIstoric,rapoarte:renderRapoarte})[name]?.();
+}
+
+// ---- MODAL ----
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  if (id==='modal-programare') { populateSel('prog-elev'); document.getElementById('prog-data').value=getTodayStr(); resetExCheckboxes('prog'); document.getElementById('prog-loc').value=''; }
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('open'); }));
+
+function populateSel(id) {
+  const s=document.getElementById(id); if(!s) return;
+  s.innerHTML='<option value="">— Selectează —</option>';
+  elevi.forEach((el,i)=>s.innerHTML+=`<option value="${i}">${el.prenume} ${el.nume}</option>`);
+}
+
+function toggleExStyle(cb) {
+  cb.closest('.ex-checkbox').classList.toggle('checked', cb.checked);
+}
+
+function resetExCheckboxes(prefix) {
+  for(let i=0;i<4;i++) {
+    const lbl = document.getElementById(`ex-${prefix}-${i}`);
+    if (!lbl) continue;
+    const cb = lbl.querySelector('input');
+    cb.checked = false;
+    lbl.classList.remove('checked');
+  }
+}
+
+function getCheckedEx(prefix) {
+  return EXERCITII.filter((_,i)=>document.getElementById(`ex-${prefix}-${i}`)?.querySelector('input')?.checked);
+}
+
+function updateElevInfo() {
+  const idx = document.getElementById('prog-elev').value;
+  const box = document.getElementById('elev-info-box');
+  if (idx==='') { box.style.display='none'; return; }
+  const el = elevi[parseInt(idx)];
+  box.style.display='block';
+  document.getElementById('ei-sed').textContent = `${el.sedinteEfectuate} / ${TOTAL_SEDINTE}`;
+  document.getElementById('ei-ore').textContent = oreCon(el);
+  document.getElementById('ei-rama').textContent = oreRam(el);
+}
+
+// ---- NOTIF ----
+function showNotif(title, body, type='info', dur=4000) {
+  const c=document.getElementById('notif-container');
+  const n=document.createElement('div');
+  n.className=`notif notif-${type}`;
+  n.innerHTML=`<div class="notif-title">${title}</div><div class="notif-body">${body}</div>`;
+  c.appendChild(n);
+  setTimeout(()=>{ n.style.opacity='0'; n.style.transition='opacity 0.3s'; setTimeout(()=>n.remove(),300); },dur);
+}
+
+// ---- AUTO-FINALIZARE & REMINDERE ----
+function checkAuto() {
+  const today=getTodayStr();
+  const now=new Date();
+  const nowMin=now.getHours()*60+now.getMinutes();
+  let changed=false;
+  programari.forEach((p,i)=>{
+    if(p.status==='finalizat') return;
+    const endMin=timeToMin(p.ora)+SEDINTA_MIN;
+    if(p.data<today || (p.data===today && nowMin>=endMin)) {
+      programari[i].status='finalizat';
+      const eIdx=p.elevIdx;
+      if(eIdx>=0&&eIdx<elevi.length) {
+        elevi[eIdx].sedinteEfectuate++;
+        istoric.push({elevIdx:eIdx,data:p.data,ora:p.ora,exercitii:p.exercitii||[],obs:p.obs||'',durata:SEDINTA_MIN,auto:true});
+        showNotif('✅ Auto-finalizat',`${elevi[eIdx].prenume} ${elevi[eIdx].nume} — ${p.ora}`,'success');
+      }
+      changed=true;
+    }
+    if(p.data===today&&p.reminder&&!p.reminderSent) {
+      const startMin=timeToMin(p.ora);
+      if(nowMin>=startMin-30&&nowMin<startMin) {
+        programari[i].reminderSent=true;
+        const el=elevi[p.elevIdx];
+        const mins=startMin-nowMin;
+        const name=el?`${el.prenume} ${el.nume}`:'N/A';
+        showNotif(`🔔 Ședință în ${mins} minute!`,`${name} — ${p.ora}`,'warning',8000);
+        const banner=document.getElementById('reminder-banner');
+        document.getElementById('reminder-text').innerHTML=`Ședință în <strong>${mins} minute</strong> cu <strong>${name}</strong> la <strong>${p.ora}</strong>`;
+        banner.classList.add('show');
+        setTimeout(()=>banner.classList.remove('show'),15000);
+        changed=true;
+      }
+    }
+  });
+  if(changed){save();renderDashboard();renderElevi();renderIstoric();renderRapoarte();}
+}
+checkAuto(); setInterval(checkAuto,60000);
+
+// ---- ADAUGA / EDITEAZA ELEV ----
+function deschideAdaugaElev() {
+  document.getElementById('modal-elev-title').textContent = 'Adaugă Elev Nou';
+  document.getElementById('el-edit-idx').value = '-1';
+  ['el-prenume','el-nume','el-tel'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('el-cat').value = 'B - Autoturism';
+  document.getElementById('el-data').value = getTodayStr();
+  openModal('modal-elev');
+}
+function deschideEditElev(i) {
+  const el = elevi[i];
+  document.getElementById('modal-elev-title').textContent = 'Editează Elev';
+  document.getElementById('el-edit-idx').value = i;
+  document.getElementById('el-prenume').value = el.prenume;
+  document.getElementById('el-nume').value = el.nume;
+  document.getElementById('el-tel').value = el.tel||'';
+  document.getElementById('el-cat').value = el.categorie;
+  document.getElementById('el-data').value = el.dataInreg||getTodayStr();
+  openModal('modal-elev');
+}
+function salveazaElev() {
+  const prenume=document.getElementById('el-prenume').value.trim();
+  const nume=document.getElementById('el-nume').value.trim();
+  if(!prenume||!nume){showNotif('⚠️','Completați prenumele și numele!','warning');return;}
+  const idx=parseInt(document.getElementById('el-edit-idx').value);
+  const date={prenume,nume,tel:document.getElementById('el-tel').value.trim(),categorie:document.getElementById('el-cat').value,dataInreg:document.getElementById('el-data').value||getTodayStr()};
+  if(idx===-1){elevi.push({...date,sedinteEfectuate:0});showNotif('✅ Elev adăugat',`${prenume} ${nume}`,'success');}
+  else{elevi[idx]={...elevi[idx],...date};showNotif('✏️ Elev actualizat',`${prenume} ${nume}`,'success');}
+  save(); closeModal('modal-elev');
+  renderElevi(); renderDashboard(); populateFiltruIstoric();
+}
+
+// ---- ADAUGA PROGRAMARE ----
+function adaugaProgramare() {
+  const idx=document.getElementById('prog-elev').value;
+  if(idx===''){showNotif('⚠️','Selectați un elev!','warning');return;}
+  const data=document.getElementById('prog-data').value;
+  const ora=document.getElementById('prog-ora').value;
+  if(!data||!ora){showNotif('⚠️','Completați data și ora!','warning');return;}
+  const ex=getCheckedEx('prog');
+  const loc=document.getElementById('prog-loc').value.trim();
+  programari.push({elevIdx:parseInt(idx),data,ora,loc,exercitii:ex,obs:document.getElementById('prog-obs').value.trim(),durata:SEDINTA_MIN,status:'programat',reminder:document.getElementById('prog-reminder').checked,reminderSent:false});
+  save(); closeModal('modal-programare');
+  document.getElementById('prog-obs').value='';
+  document.getElementById('prog-loc').value='';
+  const el=elevi[parseInt(idx)];
+  showNotif('📅 Programare adăugată',`${el.prenume} ${el.nume} — ${data} ${ora}${loc?' @ '+loc:''}`,'success');
+  renderProgramare(); renderDashboard();
+}
+
+// ---- FINALIZARE MANUALA ----
+function deschideFinalizare(i) {
+  finalizIdx=i;
+  const p=programari[i];
+  const el=elevi[p.elevIdx];
+  document.getElementById('fin-info').innerHTML=`
+    <div class="sedinta-summary-row"><span>Elev</span><strong style="color:var(--text)">${el?el.prenume+' '+el.nume:'N/A'}</strong></div>
+    <div class="sedinta-summary-row"><span>Data / Ora</span><strong>${p.data} la ${p.ora}</strong></div>
+    <div class="sedinta-summary-row"><span>Ședință nr.</span><strong>${(el?el.sedinteEfectuate:0)+1} / ${TOTAL_SEDINTE}</strong></div>
+    <div class="sedinta-summary-row"><span>Ore după ședință</span><strong>${minToH((el?el.sedinteEfectuate+1:1)*SEDINTA_MIN)} / ${TOTAL_ORE}h</strong></div>`;
+  resetExCheckboxes('fin');
+  // Pre-bifează exercițiile planificate
+  (p.exercitii||[]).forEach(ex=>{
+    const i2=EXERCITII.indexOf(ex);
+    if(i2>=0){const lbl=document.getElementById(`ex-fin-${i2}`);if(lbl){lbl.querySelector('input').checked=true;lbl.classList.add('checked');}}
+  });
+  document.getElementById('fin-obs').value='';
+  openModal('modal-finaliz');
+}
+
+function confirmFinalizare() {
+  if(finalizIdx===null) return;
+  const p=programari[finalizIdx];
+  p.status='finalizat';
+  const eIdx=p.elevIdx;
+  const ex=getCheckedEx('fin');
+  const obs=document.getElementById('fin-obs').value.trim();
+  if(eIdx>=0&&eIdx<elevi.length) {
+    elevi[eIdx].sedinteEfectuate++;
+    istoric.push({elevIdx:eIdx,data:p.data,ora:p.ora,exercitii:ex,obs,durata:SEDINTA_MIN,auto:false});
+    const el=elevi[eIdx];
+    const oreAcum=minToH(el.sedinteEfectuate*SEDINTA_MIN);
+    showNotif('✅ Ședință finalizată',`${el.prenume} ${el.nume} — ${oreAcum} / ${TOTAL_ORE}h`,'success');
+    if(el.sedinteEfectuate>=TOTAL_SEDINTE) showNotif('🎉 Gata de examen!',`${el.prenume} ${el.nume} a completat toate cele ${TOTAL_ORE} ore!`,'success',6000);
+  }
+  save(); closeModal('modal-finaliz'); finalizIdx=null;
+  renderProgramare(); renderElevi(); renderDashboard(); renderIstoric(); renderRapoarte();
+}
+
+
+
+// ---- CONFIRM MODAL ----
+function showConfirm(msg, sub, onOk) {
+  document.getElementById('confirm-msg').textContent = msg;
+  document.getElementById('confirm-sub').textContent = sub || 'Această acțiune nu poate fi anulată.';
+  document.getElementById('confirm-ok-btn').onclick = () => { closeModal('modal-confirm'); onOk(); };
+  openModal('modal-confirm');
+}
+
+function stergeElev(i) {
+  const el = elevi[i];
+  showConfirm(
+    `Ștergeți elevul ${el.prenume} ${el.nume}?`,
+    'Se vor șterge și toate programările și istoricul acestui elev.',
+    () => {
+      elevi.splice(i, 1);
+      programari = programari.filter(p => p.elevIdx !== i).map(p => ({...p, elevIdx: p.elevIdx > i ? p.elevIdx - 1 : p.elevIdx}));
+      istoric = istoric.filter(h => h.elevIdx !== i).map(h => ({...h, elevIdx: h.elevIdx > i ? h.elevIdx - 1 : h.elevIdx}));
+      save();
+      renderElevi(); renderDashboard(); renderProgramare(); renderIstoric(); renderRapoarte(); populateFiltruIstoric();
+      showNotif('🗑 Elev șters', `${el.prenume} ${el.nume} a fost eliminat`, 'info', 3000);
+    }
+  );
+}
+
+function stergeProgr(i) {
+  showConfirm(
+    'Ștergeți această programare?',
+    '',
+    () => {
+      programari.splice(i, 1);
+      save(); renderProgramare(); renderDashboard();
+    }
+  );
+}
+
+// ---- RENDER DASHBOARD ----
+function renderDashboard() {
+  const today=getTodayStr();
+  document.getElementById('st-elevi').textContent=elevi.length;
+  const azi=programari.filter(p=>p.data===today);
+  document.getElementById('st-azi').textContent=azi.length;
+  document.getElementById('st-ore-azi').textContent=minToH(azi.length*SEDINTA_MIN);
+  document.getElementById('st-fin').textContent=elevi.filter(el=>el.sedinteEfectuate>=TOTAL_SEDINTE).length;
+
+  const ul=document.getElementById('upcoming-list');
+  if(!azi.length) { ul.innerHTML='<p style="color:var(--muted);font-size:13px;text-align:center;padding:16px">Nicio programare azi</p>'; }
+  else ul.innerHTML=azi.sort((a,b)=>a.ora.localeCompare(b.ora)).map(p=>{
+    const el=elevi[p.elevIdx];
+    return `<div class="upcoming-item">
+      <div><div class="upcoming-time">${p.ora}</div><div style="font-size:10px;color:var(--muted);">2h</div></div>
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:13px;">${el?el.prenume+' '+el.nume:'N/A'}</div>
+        ${p.loc?`<div style="font-size:11px;color:var(--blue);">📍 ${p.loc}</div>`:''}
+        <div class="ex-pills" style="margin-top:3px;">${(p.exercitii||[]).map(e=>`<span class="ex-pill">${e}</span>`).join('')||''}</div>
+      </div>
+      <span class="badge ${p.status==='finalizat'?'badge-green':'badge-orange'}">${p.status==='finalizat'?'✓':'⏱'}</span>
+    </div>`;
+  }).join('');
+
+  const al=document.getElementById('active-elevi-list');
+  const activi=elevi.filter(el=>el.sedinteEfectuate<TOTAL_SEDINTE).slice(0,5);
+  if(!activi.length) { al.innerHTML='<p style="color:var(--muted);font-size:13px;text-align:center;padding:16px">Niciun elev activ</p>'; return; }
+  al.innerHTML=activi.map((el,ai)=>{
+    const elevIdx = elevi.indexOf(el);
+    const p=pct(el);
+    return `<div style="padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;" onclick="deschideFisa(${elevIdx})">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+        <div class="elev-avatar">${initials(el.prenume+' '+el.nume)}</div>
+        <div>
+          <div style="font-weight:600;font-size:13px;color:var(--accent);">${el.prenume} ${el.nume}</div>
+          <div style="font-size:11px;color:var(--muted);">${el.sedinteEfectuate}/${TOTAL_SEDINTE} șed. · ${oreCon(el)} / ${TOTAL_ORE}h</div>
+        </div>
+      </div>
+      <div class="progress-wrap"><div class="progress-fill" style="width:${p}%;background:${pctColor(p)}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// ---- RENDER ELEVI ----
+function renderElevi() {
+  const tbody=document.getElementById('elevi-tbody');
+  if(!elevi.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:28px">Niciun elev adăugat</td></tr>';return;}
+  tbody.innerHTML=elevi.map((el,i)=>{
+    const p=pct(el);
+    const gata=el.sedinteEfectuate>=TOTAL_SEDINTE;
+    return `<tr>
+      <td><div style="display:flex;align-items:center;gap:8px;cursor:pointer;" onclick="deschideFisa(${i})">
+        <div class="elev-avatar">${initials(el.prenume+' '+el.nume)}</div>
+        <div>
+          <div style="font-weight:600;color:var(--accent);text-decoration:underline dotted;">${el.prenume} ${el.nume}</div>
+          <div style="font-size:11px;color:var(--muted);">${el.categorie}</div>
+        </div>
+      </div></td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px;">${el.tel||'—'}</td>
+      <td><span style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--accent);">${el.sedinteEfectuate}</span><span style="color:var(--muted);font-size:12px;"> / ${TOTAL_SEDINTE}</span></td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px;">${oreCon(el)}<span style="color:var(--muted);"> / ${TOTAL_ORE}h</span></td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px;color:${gata?'var(--green)':'var(--accent2)'};">${gata?'—':oreRam(el)}</td>
+      <td><div class="progress-wrap"><div class="progress-fill" style="width:${p}%;background:${pctColor(p)}"></div></div><div class="progress-label">${p}% · ${oreCon(el)}</div></td>
+      <td>${gata?'<span class="badge badge-green">✓ Gata Examen</span>':p>=60?'<span class="badge badge-orange">În Progres</span>':'<span class="badge badge-red">Început</span>'}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="deschideEditElev(${i})" title="Editează">✏️</button> <button class="btn btn-ghost btn-sm" onclick="stergeElev(${i})" title="Șterge">🗑</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ---- RENDER PROGRAMARE ----
+function renderProgramare() {
+  const tbody=document.getElementById('prog-tbody');
+  if(!programari.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:28px">Nicio programare</td></tr>';return;}
+  tbody.innerHTML=[...programari].map((p,i)=>({...p,_i:i})).sort((a,b)=>(b.data+b.ora).localeCompare(a.data+a.ora)).map(p=>{
+    const el=elevi[p.elevIdx];
+    return `<tr>
+      <td><div style="display:flex;align-items:center;gap:6px;">
+        <div class="elev-avatar" style="width:26px;height:26px;font-size:10px;">${el?initials(el.prenume+' '+el.nume):'?'}</div>
+        ${el?el.prenume+' '+el.nume:'Șters'}
+      </div></td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px;">${p.data}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px;">${p.ora}</td>
+      <td style="font-size:12px;">${p.loc?'📍 '+p.loc:'<span style="color:var(--muted);">—</span>'}</td>
+      <td><span class="badge badge-orange">2h</span></td>
+      <td><div class="ex-pills">${(p.exercitii||[]).map(e=>`<span class="ex-pill">${e}</span>`).join('')||'<span style="font-size:11px;color:var(--muted);">Nespecificat</span>'}</div></td>
+      <td>${p.status==='finalizat'?'<span class="badge badge-green">✓ Finalizat</span>':'<span class="badge badge-orange">Programat</span>'}</td>
+      <td><div style="display:flex;gap:4px;">
+        ${p.status!=='finalizat'?`<button class="btn btn-green btn-sm" onclick="deschideFinalizare(${p._i})">✓ Fin.</button>`:''}
+        <button class="btn btn-ghost btn-sm" onclick="stergeProgr(${p._i})">🗑</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+// ---- RENDER ISTORIC ----
+function populateFiltruIstoric() {
+  const s=document.getElementById('filtru-elev');
+  const v=s.value;
+  s.innerHTML='<option value="">Toți elevii</option>';
+  elevi.forEach((el,i)=>s.innerHTML+=`<option value="${i}">${el.prenume} ${el.nume}</option>`);
+  s.value=v;
+}
+function renderIstoric() {
+  populateFiltruIstoric();
+  const filtru=document.getElementById('filtru-elev').value;
+  const tbody=document.getElementById('istoric-tbody');
+  let data=[...istoric].map((h,i)=>({...h,_i:i})).sort((a,b)=>(b.data+b.ora).localeCompare(a.data+a.ora));
+  if(filtru!=='') data=data.filter(h=>h.elevIdx===parseInt(filtru));
+  if(!data.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:28px">Nicio ședință finalizată</td></tr>';return;}
+  tbody.innerHTML=data.map(h=>{
+    const el=elevi[h.elevIdx];
+    return `<tr>
+      <td><div style="display:flex;align-items:center;gap:6px;">
+        <div class="elev-avatar" style="width:26px;height:26px;font-size:10px;">${el?initials(el.prenume+' '+el.nume):'?'}</div>
+        ${el?el.prenume+' '+el.nume:'Șters'}
+      </div></td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px;">${h.data}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px;">${h.ora}</td>
+      <td><span class="badge badge-orange">2h</span></td>
+      <td><div class="ex-pills">${(h.exercitii||[]).length?h.exercitii.map(e=>`<span class="ex-pill">${e}</span>`).join(''):'<span style="font-size:11px;color:var(--muted);">—</span>'}</div></td>
+      <td style="font-size:12px;color:var(--muted);">${h.obs||'—'} ${h.auto?'<span class="badge badge-blue" style="font-size:9px;padding:1px 6px;">auto</span>':''}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ---- RENDER RAPOARTE ----
+function renderRapoarte() {
+  const totalSed=elevi.reduce((s,el)=>s+el.sedinteEfectuate,0);
+  document.getElementById('rap-sed').textContent=totalSed;
+  document.getElementById('rap-ore').textContent=minToH(totalSed*SEDINTA_MIN);
+  document.getElementById('rap-med').textContent=elevi.length?(totalSed/elevi.length).toFixed(1):'0';
+  const tbody=document.getElementById('rap-tbody');
+  if(!elevi.length){tbody.innerHTML='<tr><td colspan="11" style="text-align:center;color:var(--muted);padding:28px">Niciun elev</td></tr>';return;}
+
+  // Calculează câte ori a făcut fiecare exercițiu per elev
+  function exCount(elevIdx, exName) {
+    return istoric.filter(h=>h.elevIdx===elevIdx&&(h.exercitii||[]).includes(exName)).length;
+  }
+
+  tbody.innerHTML=elevi.map((el,i)=>{
+    const p=pct(el);
+    const ramase=Math.max(0,TOTAL_SEDINTE-el.sedinteEfectuate);
+    const gata=el.sedinteEfectuate>=TOTAL_SEDINTE;
+    return `<tr>
+      <td><div style="display:flex;align-items:center;gap:8px;">
+        <div class="elev-avatar">${initials(el.prenume+' '+el.nume)}</div>
+        <div><div style="font-weight:600;font-size:13px;">${el.prenume} ${el.nume}</div><div style="font-size:11px;color:var(--muted);">${el.tel||''}</div></div>
+      </div></td>
+      <td style="font-size:12px;color:var(--muted);">${el.categorie}</td>
+      <td><span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--accent);">${el.sedinteEfectuate}</span><span style="color:var(--muted);font-size:11px;"> / ${TOTAL_SEDINTE}</span></td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px;">${oreCon(el)} <span style="color:var(--muted);">/ ${TOTAL_ORE}h</span></td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px;color:${gata?'var(--green)':'var(--accent2)'};">${gata?'✓':oreRam(el)}</td>
+      <td><div class="progress-wrap"><div class="progress-fill" style="width:${p}%;background:${pctColor(p)}"></div></div><div class="progress-label">${p}%</div></td>
+      ${EXERCITII.map(ex=>{const c=exCount(i,ex);return `<td style="text-align:center;font-family:'DM Mono',monospace;font-size:13px;color:${c>0?'var(--green)':'var(--muted)'};">${c>0?'×'+c:'—'}</td>`}).join('')}
+      <td>${gata?'<span class="badge badge-green">✓ DA</span>':'<span class="badge badge-red">Nu</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ---- EXPORT CSV ----
+function exportCSV() {
+  function exCount(elevIdx,exName){return istoric.filter(h=>h.elevIdx===elevIdx&&(h.exercitii||[]).includes(exName)).length;}
+  const rows=[['Elev','Telefon','Categorie','Sedinte','Ore Condus','Ore Ramase','%','Parcare Lat.','Parcare Spate','Traseu Oras','Pornire Panta','Gata Examen']];
+  elevi.forEach((el,i)=>{
+    const p=pct(el);
+    rows.push([`${el.prenume} ${el.nume}`,el.tel||'',el.categorie,`${el.sedinteEfectuate}/${TOTAL_SEDINTE}`,oreCon(el),el.sedinteEfectuate>=TOTAL_SEDINTE?'—':oreRam(el),p+'%',...EXERCITII.map(ex=>exCount(i,ex)),el.sedinteEfectuate>=TOTAL_SEDINTE?'DA':'NU']);
+  });
+  const csv=rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download=`autopro-${getTodayStr()}.csv`; a.click();
+  showNotif('📊 Export CSV','Deschide fișierul în Excel!','success');
+}
+
+// ---- EXPORT PDF ----
+function exportPDF() {
+  function exCount(elevIdx,exName){return istoric.filter(h=>h.elevIdx===elevIdx&&(h.exercitii||[]).includes(exName)).length;}
+  const win=window.open('','_blank');
+  const rows=elevi.map((el,i)=>{
+    const p=pct(el);
+    return `<tr>
+      <td>${el.prenume} ${el.nume}</td><td>${el.categorie}</td><td>${el.tel||'—'}</td>
+      <td>${el.sedinteEfectuate} / ${TOTAL_SEDINTE}</td>
+      <td>${oreCon(el)} / ${TOTAL_ORE}h</td>
+      <td>${p}%</td>
+      ${EXERCITII.map(ex=>`<td style="text-align:center;">${exCount(i,ex)||'—'}</td>`).join('')}
+      <td style="font-weight:bold;color:${el.sedinteEfectuate>=TOTAL_SEDINTE?'green':'red'}">${el.sedinteEfectuate>=TOTAL_SEDINTE?'DA':'NU'}</td>
+    </tr>`;
+  }).join('');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>AutoPro Raport</title>
+  <style>body{font-family:Arial,sans-serif;padding:30px;color:#111}h1{font-size:22px;margin-bottom:4px}.sub{color:#666;font-size:12px;margin-bottom:20px}table{width:100%;border-collapse:collapse;font-size:11px}th{background:#f4a227;color:#000;padding:7px 9px;text-align:left;border:1px solid #ddd}td{padding:7px 9px;border:1px solid #ddd}tr:nth-child(even){background:#fafafa}.footer{margin-top:16px;font-size:10px;color:#999}</style>
+  </head><body>
+  <h1>AutoPro — Raport Elevi</h1>
+  <div class="sub">Generat: ${new Date().toLocaleDateString('ro-RO')} · 30 ore obligatorii · 1 ședință = 2h · Total: ${TOTAL_SEDINTE} ședințe</div>
+  <table><thead><tr><th>Elev</th><th>Cat.</th><th>Telefon</th><th>Ședințe</th><th>Ore</th><th>%</th>${EXERCITII.map(e=>`<th>${e}</th>`).join('')}<th>Examen</th></tr></thead>
+  <tbody>${rows}</tbody></table>
+  <div class="footer">Total elevi: ${elevi.length} · Total ședințe finalizate: ${elevi.reduce((s,el)=>s+el.sedinteEfectuate,0)}</div>
+  </body></html>`);
+  win.document.close(); setTimeout(()=>win.print(),500);
+}
+
+// ---- FISA ELEV ----
+let fisaElevIdx = null;
+let fisaCalData = new Date();
+
+function deschideFisa(i) {
+  fisaElevIdx = i;
+  fisaCalData = new Date();
+  renderFisa();
+  openModal('modal-fisa');
+}
+
+function renderFisa() {
+  const i = fisaElevIdx;
+  const el = elevi[i];
+  if (!el) return;
+
+  const sedEf = el.sedinteEfectuate;
+  const sedRam = Math.max(0, TOTAL_SEDINTE - sedEf);
+  const oreEf = sedEf * 2; // 2h per sedinta
+  const oreRam2 = sedRam * 2;
+  const p = pct(el);
+  const gata = sedEf >= TOTAL_SEDINTE;
+
+  // Header
+  document.getElementById('fisa-avatar').textContent = initials(el.prenume + ' ' + el.nume);
+  document.getElementById('fisa-name').textContent = el.prenume + ' ' + el.nume;
+  document.getElementById('fisa-meta').textContent = el.categorie + (el.tel ? ' · ' + el.tel : '') + ' · Înregistrat: ' + (el.dataInreg || '—');
+  document.getElementById('fisa-edit-btn').onclick = () => { closeModal('modal-fisa'); deschideEditElev(i); };
+
+  // Progress
+  document.getElementById('fisa-ore-ef').textContent = oreEf;
+  document.getElementById('fisa-bar').style.width = p + '%';
+  document.getElementById('fisa-bar').style.background = pctColor(p);
+  document.getElementById('fisa-pct-text').textContent = p + '% completat';
+  document.getElementById('fisa-rama-text').textContent = gata ? '✓ Toate orele efectuate!' : oreRam2 + 'h rămase';
+  document.getElementById('fisa-sed-ef').textContent = sedEf;
+  document.getElementById('fisa-sed-ram').textContent = sedRam;
+  document.getElementById('fisa-status-val').innerHTML = gata
+    ? '<span style="color:var(--green);font-size:14px;">✓ GATA</span>'
+    : '<span style="color:var(--accent2);">ÎN CURS</span>';
+
+  renderFisaCalendar();
+  renderFisaIstoric();
+  renderFisaExamen();
+}
+
+function calNav(dir) {
+  fisaCalData = new Date(fisaCalData.getFullYear(), fisaCalData.getMonth() + dir, 1);
+  renderFisaCalendar();
+}
+
+function renderFisaCalendar() {
+  const i = fisaElevIdx;
+  const an = fisaCalData.getFullYear();
+  const luna = fisaCalData.getMonth();
+
+  document.getElementById('fisa-cal-luna').textContent =
+    fisaCalData.toLocaleDateString('ro-RO', {month:'long', year:'numeric'});
+
+  // Ședințele acestui elev în luna aceasta
+  const sedinteElev = [
+    ...programari.filter(p => p.elevIdx === i && p.status === 'finalizat'),
+    ...programari.filter(p => p.elevIdx === i && p.status !== 'finalizat'),
+  ];
+
+  const ziuaInceput = new Date(an, luna, 1).getDay(); // 0=dum
+  const offsetLuni = (ziuaInceput === 0 ? 6 : ziuaInceput - 1);
+  const zileLuna = new Date(an, luna + 1, 0).getDate();
+  const todayStr2 = getTodayStr();
+
+  const headers = ['Lu','Ma','Mi','Jo','Vi','Sâ','Du'];
+  let html = headers.map(h => `<div class="cal-day-header">${h}</div>`).join('');
+
+  // Empty cells
+  for (let k = 0; k < offsetLuni; k++) html += '<div class="cal-day empty"></div>';
+
+  for (let z = 1; z <= zileLuna; z++) {
+    const dateStr = `${an}-${String(luna+1).padStart(2,'0')}-${String(z).padStart(2,'0')}`;
+    const sedAzi = sedinteElev.filter(p => p.data === dateStr);
+    const isToday = dateStr === todayStr2;
+    const hasSed = sedAzi.length > 0;
+    const isFin = hasSed && sedAzi[0].status === 'finalizat';
+
+    let cls = 'cal-day';
+    if (isToday) cls += ' today';
+    if (hasSed) cls += ' has-sedinta';
+
+    const tooltip = hasSed ? `${sedAzi[0].ora}${sedAzi[0].loc ? ' @ '+sedAzi[0].loc : ''}` : '';
+    const style = isFin ? 'background:rgba(46,203,113,0.15);border-color:rgba(46,203,113,0.35);color:var(--green);' :
+                  hasSed ? '' : '';
+
+    html += `<div class="${cls}" style="${style}" title="${tooltip}">
+      ${z}${hasSed ? '<span style="position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:'+(isFin?'var(--green)':'var(--accent)')+'"></span>' : ''}
+    </div>`;
+  }
+
+  document.getElementById('fisa-calendar').innerHTML = html;
+}
+
+function renderFisaIstoric() {
+  const i = fisaElevIdx;
+  const istoricElev = istoric
+    .map((h, idx) => ({...h, _idx: idx}))
+    .filter(h => h.elevIdx === i)
+    .sort((a, b) => (b.data + b.ora).localeCompare(a.data + a.ora));
+
+  const container = document.getElementById('fisa-istoric-list');
+
+  if (!istoricElev.length) {
+    container.innerHTML = '<p style="color:var(--muted);font-size:13px;padding:12px 0;">Nicio ședință finalizată încă.</p>';
+    return;
+  }
+
+  container.innerHTML = istoricElev.map((h, nr) => {
+    const nrSed = istoricElev.length - nr;
+    const exPills = (h.exercitii || []).map(e => `<span class="ex-pill">${e}</span>`).join('');
+    return `<div class="fisa-sedinta-item">
+      <div class="fisa-sed-nr">${nrSed}</div>
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span style="font-weight:600;font-size:13px;">${h.data}</span>
+          <span class="fisa-sed-data">${h.ora !== '--:--' ? h.ora : ''}</span>
+          <span class="badge badge-orange" style="font-size:10px;">2h</span>
+          ${h.auto ? '<span class="badge badge-blue" style="font-size:9px;">auto</span>' : ''}
+        </div>
+        ${exPills ? `<div class="fisa-sed-ex">${exPills}</div>` : ''}
+        ${h.obs ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">📝 ${h.obs}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderFisaExamen() {
+  const el = elevi[fisaElevIdx];
+  const ex = el.examen || {};
+
+  // Teorie
+  document.getElementById('ex-teorie-data').value = ex.teorieData || '';
+  updateRezultatBadge('teorie', ex.teorieRezultat || '');
+  updateIncercare('teorie', ex.teorieInc || 0);
+
+  // Practic
+  document.getElementById('ex-practic-data').value = ex.practicData || '';
+  updateRezultatBadge('practic', ex.practicRezultat || '');
+  updateIncercare('practic', ex.practicInc || 0);
+}
+
+function updateRezultatBadge(tip, val) {
+  const prom = document.getElementById(`ex-${tip}-promovat`);
+  const picat = document.getElementById(`ex-${tip}-picat`);
+  prom.className = 'rezultat-badge ' + (val === 'promovat' ? 'rezultat-promovat' : 'rezultat-asteptare');
+  picat.className = 'rezultat-badge ' + (val === 'picat' ? 'rezultat-picat' : 'rezultat-asteptare');
+}
+
+function updateIncercare(tip, val) {
+  document.querySelectorAll(`#ex-${tip}-inc .inc-btn`).forEach((btn, i) => {
+    btn.classList.toggle('active', (i + 1) === val);
+  });
+}
+
+function setRezultat(tip, val) {
+  const el = elevi[fisaElevIdx];
+  if (!el.examen) el.examen = {};
+  const key = tip + 'Rezultat';
+  // Toggle: dacă dăm click pe același, resetăm
+  el.examen[key] = el.examen[key] === val ? '' : val;
+  save();
+  updateRezultatBadge(tip, el.examen[key]);
+  showNotif('✅ Salvat', `Rezultat ${tip}: ${el.examen[key] || 'resetat'}`, 'success', 2000);
+}
+
+function setIncercare(tip, nr) {
+  const el = elevi[fisaElevIdx];
+  if (!el.examen) el.examen = {};
+  const key = tip + 'Inc';
+  el.examen[key] = el.examen[key] === nr ? 0 : nr;
+  save();
+  updateIncercare(tip, el.examen[key]);
+}
+
+function salveazaExamen() {
+  const el = elevi[fisaElevIdx];
+  if (!el.examen) el.examen = {};
+  el.examen.teorieData = document.getElementById('ex-teorie-data').value;
+  el.examen.practicData = document.getElementById('ex-practic-data').value;
+  save();
+  showNotif('✅ Data salvată', '', 'success', 2000);
+}
+
+// ---- BACKUP & RESTAURARE ----
+function backupDate() {
+  const backup = {
+    versiune: 'autopro-v3',
+    data: getTodayStr(),
+    ora: new Date().toLocaleTimeString('ro-RO'),
+    elevi, programari, istoric
+  };
+  const json = JSON.stringify(backup, null, 2);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([json], {type:'application/json'}));
+  a.download = `autopro-backup-${getTodayStr()}.json`;
+  a.click();
+  showNotif('💾 Backup salvat!', `Fișier: autopro-backup-${getTodayStr()}.json`, 'success', 5000);
+}
+
+function restaureazaBackup(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const backup = JSON.parse(e.target.result);
+      if (!backup.elevi || !backup.programari || !backup.istoric) {
+        showNotif('⚠️ Eroare', 'Fișierul nu este un backup valid AutoPro!', 'warning'); return;
+      }
+      const doRestore = () => {
+        elevi = backup.elevi;
+        programari = backup.programari;
+        istoric = backup.istoric;
+        save();
+        renderDashboard(); renderElevi(); renderProgramare(); renderIstoric(); renderRapoarte(); populateFiltruIstoric();
+        showNotif('✅ Backup restaurat!', `${elevi.length} elevi, ${istoric.length} ședințe încărcate`, 'success', 5000);
+      };
+      showConfirm(
+        `Restaurezi backup din ${backup.data}?`,
+        'Datele curente vor fi înlocuite complet!',
+        doRestore
+      );
+    } catch(err) {
+      showNotif('⚠️ Eroare', 'Fișierul este corupt sau invalid!', 'warning');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ---- INIT ----
+renderDashboard(); renderElevi(); renderProgramare(); populateFiltruIstoric();
+</script>
+</body>
+</html>
